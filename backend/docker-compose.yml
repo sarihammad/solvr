@@ -1,0 +1,39 @@
+version: "3.9"
+
+# `api` is fully self-contained today (SQLite problem cache, synchronous
+# request/response) — Postgres and Redis are the target production shape from
+# PLAN.md §9.2 (persistent solve history, async solve queue) and are provided
+# here so that migration doesn't require a new compose file, but the `api`
+# service does not read or write them yet. See backend/README.md.
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      SOLVR_DB_PATH: /data/solvr.db
+      SOLVR_CORS_ORIGINS: "*"
+    volumes:
+      - solvr_data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: solvr
+      POSTGRES_PASSWORD: solvr
+      POSTGRES_DB: solvr
+    ports:
+      - "5432:5432"
+    volumes:
+      - solvr_postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  solvr_data:
+  solvr_postgres:
